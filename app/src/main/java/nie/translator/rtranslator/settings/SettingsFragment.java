@@ -37,8 +37,7 @@ import androidx.preference.PreferenceGroupAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.gallery.imageselector.GalleryImageSelector;
-
+import nie.translator.rtranslator.tools.GalleryImageSelector;
 import nie.translator.rtranslator.Global;
 import nie.translator.rtranslator.R;
 import nie.translator.rtranslator.tools.ErrorCodes;
@@ -60,6 +59,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private Global global;
     private SettingsActivity activity;
     private UserNamePreference userNamePreference;
+    private SupportLanguagesQuality supportLanguagesQualityPreference;
     private SupportTtsQualityPreference supportTtsQualityPreference;
     private LanguagePreference languagePreference;
 
@@ -156,6 +156,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         // change microphone sensibility initialization
         SeekBarPreference micSensibilityPreference = (SeekBarPreference) findPreference("micSensibilitySetting");
         micSensibilityPreference.initialize(activity, SeekBarPreference.MIC_SENSIBILITY_MODE);
+
+        // language support option with low quality initialization
+        supportLanguagesQualityPreference = (SupportLanguagesQuality) findPreference("languagesNNQualityLow");
+        supportLanguagesQualityPreference.setFragment(this);
 
         // language support option with low quality tts initialization
         supportTtsQualityPreference = (SupportTtsQualityPreference) findPreference("languagesQualityLow");

@@ -38,6 +38,7 @@ public class TTS {
     private static Thread getSupportedLanguageThread;
     private static ArrayDeque<SupportedLanguagesListener> supportedLanguagesListeners = new ArrayDeque<>();
     private static final Object lock = new Object();
+    private static final ArrayList<CustomLocale> ttsLanguages = new ArrayList<>();
 
 
     public TTS(Context context, final InitListener listener) {
@@ -53,27 +54,38 @@ public class TTS {
                         }
                     }*/
 
-                    boolean found = false;    //method 2
+                    /*boolean found = false;*/    //method 2
                     if (tts != null) {
-                        ArrayList<TextToSpeech.EngineInfo> engines = new ArrayList<>(tts.getEngines());
+                        /*ArrayList<TextToSpeech.EngineInfo> engines = new ArrayList<>(tts.getEngines());
                         for (int i = 0; i < engines.size() && !found; i++) {
-                            if (engines.get(i).name.equals("com.google.android.tts")) {
-                                found = true;
+                            switch (engines.get(i).name) {
+                                case "com.google.android.tts":
+                                    found = true; // Check Google TTS here.
+                                    break;
+                                case "com.samsung.SMT": // Check Samsung TTS here.
+                                    found = true;
+                                    break;
+                                case "com.huawei.hiai": // Check Huawei TTS here.
+                                    found = true;
+                                    break;
                             }
-                        }
+                        } // Look forward to supporting more TTS engine.
                         if (!found) {
                             tts = null;
                             listener.onError(ErrorCodes.MISSING_GOOGLE_TTS);
                         } else {
                             listener.onInit();
                         }
-                        return;
+                        return;*/
+                        listener.onInit();
+                        return; // Set TTS to the default TTS directly.
                     }
                 }
                 tts = null;
                 listener.onError(ErrorCodes.GOOGLE_TTS_ERROR);
             }
-        }, "com.google.android.tts");
+        },
+        null);// use default TTS when this is null
     }
 
     public boolean isActive() {
@@ -189,7 +201,6 @@ public class TTS {
             tempTts = new TTS((context), new TTS.InitListener() {    // tts initialization (to be improved, automatic package installation)
                 @Override
                 public void onInit() {
-                    ArrayList<CustomLocale> ttsLanguages = new ArrayList<>();
                     Set<Voice> set = tempTts.getVoices();
                     SharedPreferences sharedPreferences = context.getSharedPreferences("default", Context.MODE_PRIVATE);
                     boolean qualityLow = sharedPreferences.getBoolean("languagesQualityLow", false);
@@ -197,16 +208,27 @@ public class TTS {
                     if (qualityLow) {
                         quality = Voice.QUALITY_VERY_LOW;
                     } else {
-                        quality = Voice.QUALITY_HIGH;
+                        quality = Voice.QUALITY_NORMAL;
                     }
+                    boolean foundLanguage = false; // if there is available languages
                     if (set != null) {
                         // we filter the languages that have a tts that reflects the quality characteristics we want
                         for (Voice aSet : set) {
-                            if (aSet.getQuality() >= quality && !aSet.getFeatures().contains("legacySetLanguageVoice")) {
-                                CustomLocale language = new CustomLocale(aSet.getLocale());
+                            if (aSet.getQuality() >= quality && (qualityLow || !aSet.getFeatures().contains("legacySetLanguageVoice"))) {
+                                CustomLocale language;
+                                if(aSet.getLocale() != null){
+                                    language = new CustomLocale(aSet.getLocale()); // Use .getLocale() for google
+                                    foundLanguage = true;
+                                }else{
+                                    language = CustomLocale.getInstance(aSet.getName()); // Use .getName() for samsung/huawei (maybe others also)
+                                    foundLanguage = true;
+                                }
+
                                 ttsLanguages.add(language);
                             }
                         }
+                    }
+                    if (foundLanguage) {    // start TTS if the above lines find at least 1 supported language
                         mainHandler.post(new Runnable() {
                             @Override
                             public void run() {
